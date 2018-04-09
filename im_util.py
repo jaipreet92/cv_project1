@@ -37,8 +37,22 @@ def convolve_1d(x, k):
   The output should be the same size as the input
   You can assume zero padding, and an odd-sized kernel
   """
+  # print('Shape of Image X and Kernel K')
+  # print(x.shape[:2])
+  # print(k.shape[:2])
 
+  pad = int((k.shape[0] - 1) / 2)
+  # print(pad)
 
+  x_padded = np.pad(x, pad, mode='constant', constant_values=0)
+
+  for idx,ele in enumerate(x_padded):
+    if idx < len(y):
+      window = x_padded[idx:idx+k.shape[0]]
+      # print(window)
+      y[idx] = np.sum(np.multiply(window, k))
+
+  # print('Result {}'.format(y))
   """
   *******************************************
   """
@@ -65,7 +79,14 @@ def convolve_rows(im, k):
   The output should be the same size as the input
   You can assume zero padding, and an odd-sized kernel
   """
+  print(im.shape)
+  print(k.shape)
 
+  H,W,B = im.shape
+
+  for band in range(B):
+    for height in range(H):
+      im_out[height, :, band] = convolve_1d(im[height, :, band], k)
 
   """
   *****************************************
