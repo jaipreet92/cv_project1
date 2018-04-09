@@ -17,6 +17,7 @@ import PIL.Image as pil
 import scipy.signal as sps
 import matplotlib.pyplot as plt
 from scipy.ndimage import map_coordinates
+import math
 
 def convolve_1d(x, k):
   """
@@ -109,6 +110,13 @@ def gauss_kernel(sigma):
   *** TODO: compute gaussian kernel at each x
   *******************************************
   """
+  print(l)
+
+  den = math.sqrt(2*math.pi*(sigma**2))
+
+  for idx,x_val in enumerate(x):
+    gx[idx] = math.pow(math.e, -1*(x_val**2 / (2*(sigma**2)))) / den
+
 
 
   """
@@ -129,8 +137,16 @@ def convolve_gaussian(im, sigma):
   *** TODO separable gaussian convolution
   ***************************************
   """
+  print('Original Shape=')
+  print(im.shape)
 
+  kx = gauss_kernel(sigma)
+  ky = kx.transpose()
+  # print('Kernel Shape={} {}'.format(kx.shape, ky.shape))
 
+  imc = convolve(convolve(im, kx), ky)
+
+  print('Final Shape={}'.format(imc.shape))
   """
   ***************************************
   """
@@ -147,7 +163,18 @@ def compute_gradients(img):
   ***********************************************
   """
 
+  ## Should we use Sobel or Scharr ? OpenCV mentions Scharr is more accurate than Sobel for
+  ## kernels of size 3 https://docs.opencv.org/2.4/doc/tutorials/imgproc/imgtrans/sobel_derivatives/sobel_derivatives.html
+  sobel_x = np.array([[-1,0,+1],[-2,0,+2],[-1,-0,+1]])
+  sobel_y = np.array([[-1,-2,-1],[0,0,0],[1,2,1]])
 
+  scharr_x = np.array([[-3,0,+3],[-10,0,+10],[-3,-0,+3]])
+  scharr_y = np.array([[-3,-10,-3],[0,0,0],[3,10,3]])
+
+  # Ix = convolve(img, sobel_x)
+  # Iy = convolve(img, sobel_y)
+  Ix = convolve(img, scharr_x)
+  Iy = convolve(img, scharr_y)
   """
   ***********************************************
   """
