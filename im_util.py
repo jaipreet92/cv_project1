@@ -137,8 +137,8 @@ def convolve_gaussian(im, sigma):
   *** TODO separable gaussian convolution
   ***************************************
   """
-  print('Original Shape=')
-  print(im.shape)
+  # print('Original Shape=')
+  # print(im.shape)
 
   kx = gauss_kernel(sigma)
   ky = kx.transpose()
@@ -146,7 +146,7 @@ def convolve_gaussian(im, sigma):
 
   imc = convolve(convolve(im, kx), ky)
 
-  print('Final Shape={}'.format(imc.shape))
+  # print('Final Shape={}'.format(imc.shape))
   """
   ***************************************
   """

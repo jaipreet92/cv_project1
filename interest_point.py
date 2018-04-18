@@ -26,7 +26,7 @@ class InterestPointExtractor:
   """
   def __init__(self):
     self.params={}
-    self.params['border_pixels']=10
+    self.params['border_pixels']=20
     self.params['strength_threshold_percentile']=95
     self.params['supression_radius_frac']=0.01
 
@@ -56,19 +56,36 @@ class InterestPointExtractor:
     H, W, _ = img.shape
 
     # FORNOW: random interest point function
-    ip_fun = np.random.randn(H, W, 1)
+    # ip_fun = np.random.randn(H, W, 1)
 
     """
     **********************************************************
     *** TODO: write code to compute a corner strength function
     **********************************************************
     """
+    # #Harris Corners approach
+    # print('Using Harris Corner')
+    # Ix, Iy = im_util.compute_gradients(img)
+    # sigma = 4.0
+    # Ix2 = im_util.convolve_gaussian(np.square(Ix), sigma) # Has a value at every pixel, implement the w(x,y) as a convulution (Gaussian, size of the kernel is arbitrary)
+    # Iy2 = im_util.convolve_gaussian(np.square(Iy), sigma) #
+    # Ixy = im_util.convolve_gaussian(Ix*Iy, sigma)
 
+    # det = (Ix2 * Iy2) - (Ixy**2)
+    # trace = Ix2 + Iy2
+    # k = 0.6 #0.4 -0.6
+    # ip_fun = det - k*(trace**2)
 
+    # DoG
+    print('Using DoG')
+
+    ip_fun = im_util.convolve_gaussian(img, 6.5) - im_util.convolve_gaussian(img, 4.0)
+
+    # print('CORNER_FUNCTION: Ix2: {} Iy2: {} Ixy: {}, ip_fun: {}'.format(Ix2.shape, Iy2.shape, Ixy.shape, ip_fun.shape))
     """
     **********************************************************
     """
-
+    
     return ip_fun
 
   def find_local_maxima(self, ip_fun):
@@ -96,8 +113,8 @@ class InterestPointExtractor:
     col = []
 
     # FORNOW: random row and column coordinates
-    row = np.random.randint(0,H,100)
-    col = np.random.randint(0,W,100)
+    # row = np.random.randint(0,H,100)
+    # col = np.random.randint(0,W,100)
 
     """
     ***************************************************
@@ -106,7 +123,31 @@ class InterestPointExtractor:
 
     Hint: try scipy filters.maximum_filter with im_util.disc_mask
     """
+    footprint = im_util.disc_mask(suppression_radius_pixels)
+    print('Footprint: {}'.format(footprint.shape))
+    mx = filters.maximum_filter(ip_fun, footprint.shape, footprint)
+    
+    print('Threshold: {}'.format(strength_threshold))
+    row, col, _ = np.where((mx > strength_threshold) & (mx == ip_fun))
 
+    print('Num interest points: {} Min/Max Row {} {}Min/Max Col {} {}'.format(len(row), row.min(), row.max(), col.min(), col.max()) )
+  
+
+    # Remove border pixels
+    rows_bp = []
+    cols_bp = []
+    total = len(row)
+    for idx in range(total):
+        curr_row = row[idx]
+        curr_col = col[idx]
+        if curr_row >= border_pixels and curr_col >=border_pixels and (curr_col <= W - border_pixels) and (curr_row <= H - border_pixels):
+          rows_bp.append(curr_row)
+          cols_bp.append(curr_col)
+
+    row = np.asarray(rows_bp)
+    col = np.asarray(cols_bp)
+
+    print('Num interest points after border_pixels: {} {}'.format(len(row), len(col)) )
 
     """
     ***************************************************
@@ -120,8 +161,8 @@ class DescriptorExtractor:
   """
   def __init__(self):
     self.params={}
-    self.params['patch_size']=8
-    self.params['ratio_threshold']=1.0
+    self.params['patch_size']=17
+    self.params['ratio_threshold']=.75
 
   def get_descriptors(self, img, ip):
     """
@@ -136,6 +177,8 @@ class DescriptorExtractor:
     patch_size_div2=int(patch_size/2)
     num_dims=patch_size**2
 
+    print('Patch size: {} Num_dims: {} , ip {}, img {}'.format(patch_size, num_dims, ip.shape, img.shape))
+
     H,W,_=img.shape
     num_ip=ip.shape[1]
     descriptors=np.zeros((num_ip,num_dims))
@@ -146,14 +189,18 @@ class DescriptorExtractor:
       col=ip[1,i]
 
       # FORNOW: random image patch
-      patch=np.random.randn(patch_size,patch_size)
+      # patch=np.random.randn(patch_size,patch_size)
 
       """
       ******************************************************
       *** TODO: write code to extract descriptor at row, col
       ******************************************************
       """
-
+      row_start = 0 if row-patch_size_div2 < 0 else row-patch_size_div2
+      row_end = H if row+patch_size_div2+1 > H else row+patch_size_div2+1
+      col_start = 0 if col-patch_size_div2 < 0 else col-patch_size_div2
+      col_end = W if col+patch_size_div2+1 > W else col+patch_size_div2+1
+      patch = img[row_start:row_end, col_start:col_end ]
 
       """
       ******************************************************
