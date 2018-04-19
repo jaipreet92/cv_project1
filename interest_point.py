@@ -26,7 +26,7 @@ class InterestPointExtractor:
   """
   def __init__(self):
     self.params={}
-    self.params['border_pixels']=20
+    self.params['border_pixels']=30
     self.params['strength_threshold_percentile']=95
     self.params['supression_radius_frac']=0.01
 
@@ -161,8 +161,8 @@ class DescriptorExtractor:
   """
   def __init__(self):
     self.params={}
-    self.params['patch_size']=17
-    self.params['ratio_threshold']=.75
+    self.params['patch_size']=21
+    self.params['ratio_threshold']=.85
 
   def get_descriptors(self, img, ip):
     """
@@ -181,6 +181,12 @@ class DescriptorExtractor:
 
     H,W,_=img.shape
     num_ip=ip.shape[1]
+
+    sample_spacing = 2
+    if sample_spacing > 1:
+      num_dims = int(np.sqrt(patch_size**2 / sample_spacing))**2
+    else:
+      num_dims = patch_size**2
     descriptors=np.zeros((num_ip,num_dims))
 
 
@@ -205,8 +211,13 @@ class DescriptorExtractor:
       """
       ******************************************************
       """
-
-      descriptors[i, :]=np.reshape(patch,num_dims)
+      if sample_spacing > 1:
+        patch = np.ndarray.flatten(patch)
+        patch = patch[::sample_spacing]
+        patch = patch[:num_dims]
+        descriptors[i, :]= patch
+      else:
+        descriptors[i, :]=np.reshape(patch,num_dims)
 
     # normalise descriptors to 0 mean, unit length
     mn=np.mean(descriptors,1,keepdims=True)
