@@ -80,8 +80,8 @@ def convolve_rows(im, k):
   The output should be the same size as the input
   You can assume zero padding, and an odd-sized kernel
   """
-  print(im.shape)
-  print(k.shape)
+  # print(im.shape)
+  # print(k.shape)
 
   H,W,B = im.shape
 

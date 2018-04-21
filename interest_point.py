@@ -16,6 +16,7 @@ import numpy as np
 import scipy.ndimage.filters as filters
 from scipy.ndimage import map_coordinates
 from matplotlib.patches import Circle
+from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 
 import im_util
@@ -29,6 +30,9 @@ class InterestPointExtractor:
     self.params['border_pixels']=30
     self.params['strength_threshold_percentile']=95
     self.params['supression_radius_frac']=0.01
+
+  def set_border_pixels(self, border_pixels_new):
+    self.params['border_pixels'] = border_pixels_new 
 
   def find_interest_points(self, img):
     """
@@ -164,6 +168,195 @@ class DescriptorExtractor:
     self.params['patch_size']=21
     self.params['ratio_threshold']=.85
 
+  def set_patch_size(self, new_patch_size):
+    self.params['patch_size'] = new_patch_size
+
+  def set_ratio_threshold(self, new_ratio_threshold):
+    self.params['ratio_threshold'] = new_ratio_threshold
+
+  def get_brief_gaussian_descriptors(self, img, ip):
+    """
+    Extact descriptors from grayscale image img at interest points ip
+
+    Inputs: img=grayscale input image (H, W, 1)
+            ip=interest point coordinates (2, N)
+
+    Returns: descriptors=vectorized descriptors (N, num_dims)
+    """
+    patch_size=self.params['patch_size']
+    patch_size_div2=int(patch_size/2)
+    num_dims=patch_size**2
+
+    # The indexes in the patch that we will sample.
+    brief_uniform_random_patch_size = 15
+    num_dims = brief_uniform_random_patch_size**2
+    idxs = np.random.choice(patch_size**2, num_dims, replace=False)
+
+    print('Patch size: {} Num_dims: {} , ip {}, img {}'.format(patch_size, num_dims, ip.shape, img.shape))
+
+    H,W,_=img.shape
+    num_ip=ip.shape[1]
+    descriptors=np.zeros((num_ip,num_dims))
+
+    for i in range(num_ip):
+      row=ip[0,i]
+      col=ip[1,i]
+
+      # FORNOW: random image patch
+      # patch=np.random.randn(patch_size,patch_size)
+
+      """
+      ******************************************************
+      *** TODO: write code to extract descriptor at row, col
+      ******************************************************
+      """
+      row_start = 0 if row-patch_size_div2 < 0 else row-patch_size_div2
+      row_end = H if row+patch_size_div2+1 > H else row+patch_size_div2+1
+      col_start = 0 if col-patch_size_div2 < 0 else col-patch_size_div2
+      col_end = W if col+patch_size_div2+1 > W else col+patch_size_div2+1
+      patch = img[row_start:row_end, col_start:col_end ]
+
+      """
+      ******************************************************
+      """
+      patch_flat = np.reshape(patch, patch_size**2)
+
+      descriptors[i, :]=patch_flat[idxs]
+
+    # normalise descriptors to 0 mean, unit length
+    mn=np.mean(descriptors,1,keepdims=True)
+    sd=np.std(descriptors,1,keepdims=True)
+    small_val = 1e-6
+    descriptors = (descriptors-mn)/(sd+small_val)
+
+    return descriptors
+
+  def get_pca_sift_descriptors(self, img, ip):
+    """
+    Extact descriptors from grayscale image img at interest points ip
+
+    Inputs: img=grayscale input image (H, W, 1)
+            ip=interest point coordinates (2, N)
+
+    Returns: descriptors=vectorized descriptors (N, num_dims)
+    """
+    # Fixed for PCA-SIFT
+    patch_size=39
+    patch_size_div2=int(patch_size/2)
+
+    # Fixed for PCA-SIFT
+    num_dims=3042
+
+    print('Patch size: {} Num_dims: {} , ip {}, img {}'.format(patch_size, num_dims, ip.shape, img.shape))
+
+    H,W,_=img.shape
+    num_ip=ip.shape[1]
+    descriptors=np.zeros((num_ip,num_dims))
+
+    for i in range(num_ip):
+      row=ip[0,i]
+      col=ip[1,i]
+
+      # FORNOW: random image patch
+      # patch=np.random.randn(patch_size,patch_size)
+
+      """
+      ******************************************************
+      *** TODO: write code to extract descriptor at row, col
+      ******************************************************
+      """
+      row_start = 0 if row-patch_size_div2 < 0 else row-patch_size_div2
+      row_end = H if row+patch_size_div2+1 > H else row+patch_size_div2+1
+      col_start = 0 if col-patch_size_div2 < 0 else col-patch_size_div2
+      col_end = W if col+patch_size_div2+1 > W else col+patch_size_div2+1
+      patch = img[row_start:row_end, col_start:col_end ]
+
+      """
+      ******************************************************
+      """
+      ix, iy = im_util.compute_gradients(patch)
+      ix = np.squeeze(ix)
+      iy = np.squeeze(iy)
+      patch = np.reshape(patch, patch_size**2)
+      pca_sift_patch = np.ndarray.flatten(np.array([np.ndarray.flatten(ix),np.ndarray.flatten(ix)]))
+
+      # TODO: Do PCA
+      descriptors[i, :]=pca_sift_patch
+
+    
+    # Implement PCA on descripts
+    pca = PCA(n_components=36)
+    descriptors = pca.fit_transform(descriptors)
+    print('Patch Gradient: {} {}'.format(pca_sift_patch.shape, descriptors.shape))
+
+    ## END
+
+    # normalise descriptors to 0 mean, unit length
+    mn=np.mean(descriptors,1,keepdims=True)
+    sd=np.std(descriptors,1,keepdims=True)
+    small_val = 1e-6
+    descriptors = (descriptors-mn)/(sd+small_val)
+
+    return descriptors
+
+  def get_brief_uniform_random_descriptors(self, img, ip):
+    """
+    Extact descriptors from grayscale image img at interest points ip
+
+    Inputs: img=grayscale input image (H, W, 1)
+            ip=interest point coordinates (2, N)
+
+    Returns: descriptors=vectorized descriptors (N, num_dims)
+    """
+    patch_size=self.params['patch_size']
+    patch_size_div2=int(patch_size/2)
+    num_dims=patch_size**2
+
+    # The indexes in the patch that we will sample.
+    brief_uniform_random_patch_size = 19
+    num_dims = brief_uniform_random_patch_size**2
+    # We will use the indexes for all patches, to ensure uniformity.
+    idxs = np.random.choice(patch_size**2, num_dims, replace=False)
+
+    print('Patch size: {} Num_dims: {} , ip {}, img {}'.format(patch_size, num_dims, ip.shape, img.shape))
+
+    H,W,_=img.shape
+    num_ip=ip.shape[1]
+    descriptors=np.zeros((num_ip,num_dims))
+
+    for i in range(num_ip):
+      row=ip[0,i]
+      col=ip[1,i]
+
+      # FORNOW: random image patch
+      # patch=np.random.randn(patch_size,patch_size)
+
+      """
+      ******************************************************
+      *** TODO: write code to extract descriptor at row, col
+      ******************************************************
+      """
+      row_start = 0 if row-patch_size_div2 < 0 else row-patch_size_div2
+      row_end = H if row+patch_size_div2+1 > H else row+patch_size_div2+1
+      col_start = 0 if col-patch_size_div2 < 0 else col-patch_size_div2
+      col_end = W if col+patch_size_div2+1 > W else col+patch_size_div2+1
+      patch = img[row_start:row_end, col_start:col_end ]
+
+      """
+      ******************************************************
+      """
+      patch_flat = np.reshape(patch, patch_size**2)
+
+      descriptors[i, :]=patch_flat[idxs]
+
+    # normalise descriptors to 0 mean, unit length
+    mn=np.mean(descriptors,1,keepdims=True)
+    sd=np.std(descriptors,1,keepdims=True)
+    small_val = 1e-6
+    descriptors = (descriptors-mn)/(sd+small_val)
+
+    return descriptors
+
   def get_descriptors(self, img, ip):
     """
     Extact descriptors from grayscale image img at interest points ip
@@ -184,6 +377,7 @@ class DescriptorExtractor:
 
     sample_spacing = 2
     if sample_spacing > 1:
+      # We want to keep the size of the image as a square, since the plotting method squares them.
       num_dims = int(np.sqrt(patch_size**2 / sample_spacing))**2
     else:
       num_dims = patch_size**2
