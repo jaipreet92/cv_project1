@@ -18,6 +18,8 @@ from scipy.ndimage import map_coordinates
 from matplotlib.patches import Circle
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
+from cyvlfeat import sift 
+
 
 import im_util
 
@@ -27,7 +29,7 @@ class InterestPointExtractor:
   """
   def __init__(self):
     self.params={}
-    self.params['border_pixels']=30
+    self.params['border_pixels'] = 30
     self.params['strength_threshold_percentile']=95
     self.params['supression_radius_frac']=0.01
 
@@ -42,10 +44,18 @@ class InterestPointExtractor:
 
     Outputs: ip=interest points of shape (2, N)
     """
-    ip_fun = self.corner_function(img)
-    row, col = self.find_local_maxima(ip_fun)
+    # ip_fun = self.corner_function(img)
+    # row, col = self.find_local_maxima(ip_fun)
+    # ip = np.stack((row,col))
 
-    ip = np.stack((row,col))
+    frames,desc=sift.sift(img,
+      compute_descriptor=True,
+      n_levels=1,
+      peak_thresh=0.1,
+      edge_thresh=10.0
+      )
+    ip=(frames.T)[0:2,:]
+    desc=desc.astype(np.float)
     return ip
 
   def corner_function(self, img):
@@ -366,60 +376,70 @@ class DescriptorExtractor:
 
     Returns: descriptors=vectorized descriptors (N, num_dims)
     """
-    patch_size=self.params['patch_size']
-    patch_size_div2=int(patch_size/2)
-    num_dims=patch_size**2
+    # patch_size=self.params['patch_size']
+    # patch_size_div2=int(patch_size/2)
+    # num_dims=patch_size**2
+    #
+    # print('Patch size: {} Num_dims: {} , ip {}, img {}'.format(patch_size, num_dims, ip.shape, img.shape))
+    #
+    # H,W,_=img.shape
+    # num_ip=ip.shape[1]
+    #
+    # sample_spacing = 2
+    # if sample_spacing > 1:
+    #   # We want to keep the size of the image as a square, since the plotting method squares them.
+    #   num_dims = int(np.sqrt(patch_size**2 / sample_spacing))**2
+    # else:
+    #   num_dims = patch_size**2
+    # descriptors=np.zeros((num_ip,num_dims))
+    #
+    #
+    # for i in range(num_ip):
+    #   row=ip[0,i]
+    #   col=ip[1,i]
+    #
+    #   # FORNOW: random image patch
+    #   # patch=np.random.randn(patch_size,patch_size)
+    #
+    #   """
+    #   ******************************************************
+    #   *** TODO: write code to extract descriptor at row, col
+    #   ******************************************************
+    #   """
+    #   row_start = 0 if row-patch_size_div2 < 0 else row-patch_size_div2
+    #   row_end = H if row+patch_size_div2+1 > H else row+patch_size_div2+1
+    #   col_start = 0 if col-patch_size_div2 < 0 else col-patch_size_div2
+    #   col_end = W if col+patch_size_div2+1 > W else col+patch_size_div2+1
+    #   patch = img[row_start:row_end, col_start:col_end ]
+    #
+    #   """
+    #   ******************************************************
+    #   """
+    #   if sample_spacing > 1:
+    #     patch = np.ndarray.flatten(patch)
+    #     patch = patch[::sample_spacing]
+    #     patch = patch[:num_dims]
+    #     descriptors[i, :]= patch
+    #   else:
+    #     descriptors[i, :]=np.reshape(patch,num_dims)
+    #
+    # # normalise descriptors to 0 mean, unit length
+    # mn=np.mean(descriptors,1,keepdims=True)
+    # sd=np.std(descriptors,1,keepdims=True)
+    # small_val = 1e-6
+    # descriptors = (descriptors-mn)/(sd+small_val)
+    #
+    # return descriptors
 
-    print('Patch size: {} Num_dims: {} , ip {}, img {}'.format(patch_size, num_dims, ip.shape, img.shape))
-
-    H,W,_=img.shape
-    num_ip=ip.shape[1]
-
-    sample_spacing = 2
-    if sample_spacing > 1:
-      # We want to keep the size of the image as a square, since the plotting method squares them.
-      num_dims = int(np.sqrt(patch_size**2 / sample_spacing))**2
-    else:
-      num_dims = patch_size**2
-    descriptors=np.zeros((num_ip,num_dims))
-
-
-    for i in range(num_ip):
-      row=ip[0,i]
-      col=ip[1,i]
-
-      # FORNOW: random image patch
-      # patch=np.random.randn(patch_size,patch_size)
-
-      """
-      ******************************************************
-      *** TODO: write code to extract descriptor at row, col
-      ******************************************************
-      """
-      row_start = 0 if row-patch_size_div2 < 0 else row-patch_size_div2
-      row_end = H if row+patch_size_div2+1 > H else row+patch_size_div2+1
-      col_start = 0 if col-patch_size_div2 < 0 else col-patch_size_div2
-      col_end = W if col+patch_size_div2+1 > W else col+patch_size_div2+1
-      patch = img[row_start:row_end, col_start:col_end ]
-
-      """
-      ******************************************************
-      """
-      if sample_spacing > 1:
-        patch = np.ndarray.flatten(patch)
-        patch = patch[::sample_spacing]
-        patch = patch[:num_dims]
-        descriptors[i, :]= patch
-      else:
-        descriptors[i, :]=np.reshape(patch,num_dims)
-
-    # normalise descriptors to 0 mean, unit length
-    mn=np.mean(descriptors,1,keepdims=True)
-    sd=np.std(descriptors,1,keepdims=True)
-    small_val = 1e-6
-    descriptors = (descriptors-mn)/(sd+small_val)
-
-    return descriptors
+    frames,desc=sift.sift(img,
+      compute_descriptor=True,
+      n_levels=1,
+      peak_thresh=0.1,
+      edge_thresh=10.0
+      )
+    ip=(frames.T)[0:2,:]
+    desc=desc.astype(np.float)
+    return desc
 
   def compute_distances(self, desc1, desc2):
     """

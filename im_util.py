@@ -110,7 +110,6 @@ def gauss_kernel(sigma):
   *** TODO: compute gaussian kernel at each x
   *******************************************
   """
-  print(l)
 
   den = math.sqrt(2*math.pi*(sigma**2))
 
@@ -315,3 +314,11 @@ def warp_image(im, coords):
     map_coords[2,:,:,b]=b
   warp_im = map_coordinates(im, map_coords, order=1)
   return warp_im
+
+
+def image_open_grey(im_filename):
+  """
+  utility method to open image as greyscale directly.
+  """
+  im1 = image_open(im_filename)
+  return np.mean(im1, 2, keepdims=True)

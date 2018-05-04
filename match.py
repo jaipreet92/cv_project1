@@ -50,7 +50,7 @@ class ImageMatcher:
       interest_points.append(ip)
       desc = desc_ex.get_descriptors(img, ip)
       descriptors.append(desc)
-      if (self.params['draw_interest_points']):
+      if self.params['draw_interest_points']:
         interest_point.draw_interest_points_file(im, ip, self.params['results_dir']+'/ip'+str(i)+'.jpg')
 
     t1=time()
